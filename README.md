@@ -1,0 +1,25 @@
+
+## .env
+```ini
+# 服务器配置
+PORT=3000
+
+# 数据库配置
+DB_HOST=
+DB_USER=root
+DB_PORT=
+DB_PASSWORD=
+DB_NAME=HW_MusicPlayer
+
+# JWT配置
+JWT_SECRET=
+JWT_EXPIRES_IN=24h
+
+# SMTP邮件配置
+SMTP_HOST=smtp.126.com
+SMTP_PORT=587
+SMTP_USER=
+SMTP_PASSWORD=
+SMTP_FROM=
+SMTP_SECURE=
+```
