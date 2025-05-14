@@ -329,12 +329,9 @@ async function getAvatar(req, res) {
         }
 
         // 获取头像路径
-        const avatarPath = getAvatarPath(userId);
+        let avatarPath = getAvatarPath(userId);
         if (!avatarPath) {
-            return res.status(404).json({
-                message: '头像不存在',
-                code: CODE.NOT_FOUND
-            });
+            avatarPath = path.join(UPLOAD_DIR, 'default.png');
         }
 
         res.sendFile(avatarPath);
