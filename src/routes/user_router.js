@@ -2,7 +2,6 @@ const express = require('express');
 const { body } = require('express-validator');
 const userController = require('../controllers/auth_controller');
 const emailController = require('../controllers/email_controller');
-const { upload } = require('../services/FileService');
 
 const router = express.Router();
 
@@ -90,8 +89,7 @@ router.post('/platform', [
 
 // 6.上传头像
 router.post('/avatar', [
-    // 验证头像文件
-    upload.single('avatar'),
+    body('avatar')
 ], userController.uploadAvatar);
 
 // 7.获取头像

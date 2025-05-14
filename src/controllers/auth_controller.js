@@ -2,7 +2,14 @@ const User = require('../models/user');
 const { validationResult } = require('express-validator');
 const { generateToken, verifyToken } = require('../utils/jwt');
 const verifyService = require('../services/VerificationService');
-const { getAvatarPath } = require('../services/FileService');
+const path = require('path');
+const fs = require('fs');
+
+// 头像保存目录
+const UPLOAD_DIR = path.join(__dirname, '../../uploads/avatars');
+if (!fs.existsSync(UPLOAD_DIR)) {
+    fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+}
 
 
 const CODE = {
@@ -242,19 +249,64 @@ async function uploadAvatar(req, res) {
         }
 
         const userId = decodedToken.id;
-
-        if (!req.file) {
+        const { avatar } = req.body;
+        if (!avatar) {
             return res.status(400).json({
-                message: '没有上传文件',
+                message: '缺少图片数据',
                 code: CODE.BAD_REQUEST
             });
         }
+
+        // 去除 Base64 前缀
+        const matches = avatar.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+        if (!matches || matches.length !== 3) {
+            return res.status(400).json({
+                message: '无效的图片数据格式',
+                code: CODE.BAD_REQUEST
+            });
+        }
+
+        // 获取MIME类型和实际的Base64数据
+        const imageType = matches[1];
+        const imageData = matches[2];
+        const buffer = Buffer.from(imageData, 'base64');
+
+        // 根据图片类型决定文件扩展名
+        let fileExtension;
+        switch (imageType) {
+            case 'image/jpeg':
+            case 'image/jpg':
+                fileExtension = '.jpg';
+                break;
+            case 'image/png':
+                fileExtension = '.png';
+                break;
+            case 'image/gif':
+                fileExtension = '.gif';
+                break;
+            default:
+                fileExtension = '.jpg'; // 默认为jpg
+        }
+
+        // 清理之前的头像文件
+        const extensions = ['.jpg', '.jpeg', '.png', '.gif'];
+        for (const ext of extensions) {
+            const oldFilePath = path.join(UPLOAD_DIR, `${userId}${ext}`);
+            if (fs.existsSync(oldFilePath)) {
+                fs.unlinkSync(oldFilePath);
+            }
+        }
+
+        // 保存新头像
+        const avatarPath = path.join(UPLOAD_DIR, `${userId}${fileExtension}`);
+        fs.writeFileSync(avatarPath, buffer);
 
         res.json({
             message: '头像上传成功',
             code: CODE.SUCCESS
         });
 
+        console.log('头像保存成功:', avatarPath);
     } catch (error) {
         console.error('上传头像失败:', error);
         return res.status(500).json({ message: '上传头像失败' });
@@ -290,6 +342,19 @@ async function getAvatar(req, res) {
         console.error('获取头像失败:', error);
         return res.status(500).json({ message: '获取头像失败' });
     }
+}
+
+function getAvatarPath(userId) {
+    const extensions = ['.jpg', '.jpeg', '.png', '.gif'];
+
+    for (const ext of extensions) {
+        const filePath = path.join(UPLOAD_DIR, `${userId}${ext}`);
+        if (fs.existsSync(filePath)) {
+            return filePath;
+        }
+    }
+
+    return null;
 }
 
 module.exports = {
